@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIXEL ART SIMETRIA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght=600;700;800;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #F4F6FA;
+    min-height: 100vh;
+    padding: 20px 16px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    color: #2D3142;
+  }
+
+  .header { text-align: center; }
+  .header h1 { font-size: clamp(1.3rem, 3.6vw, 1.9rem); font-weight: 900; color: #2D3142; }
+  .header p  { font-size: clamp(0.8rem, 1.9vw, 0.95rem); color: #6B7280; font-weight: 700; margin-top: 4px; }
+
+  .section {
+    width: 100%;
+    max-width: 650px;
+    background: #fff;
+    border: 2px solid #E5E8EF;
+    border-radius: 18px;
+    box-shadow: 0 2px 14px rgba(45,49,66,0.06);
+    padding: 22px;
+  }
+  .section-instr {
+    text-align: center;
+    font-size: 0.95rem;
+    color: #6B7280;
+    font-weight: 700;
+    margin-bottom: 22px;
+  }
+  .section-instr span { color: #8C4DFF; font-weight: 800; }
+
+  /* Container central do desenho unificado */
+  .mirror-workspace {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .grid-side {
+    display: grid;
+    grid-template-columns: repeat(6, clamp(22px, 4.5vw, 32px));
+    background: #1A1A1A;
+    border: 3px solid #1A1A1A;
+    gap: 1px;
+  }
+
+  /* Linha pontilhada divisória bem evidente no centro */
+  .mirror-divider {
+    width: 4px;
+    height: calc(12 * clamp(22px, 4.5vw, 32px) + 13px);
+    background-image: linear-gradient(to bottom, #1A1A1A 50%, transparent 50%);
+    background-size: 4px 14px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .pixel-cell {
+    width: clamp(22px, 4.5vw, 32px);
+    height: clamp(22px, 4.5vw, 32px);
+    background: #fff;
+    transition: background 0.1s;
+  }
+
+  /* Estilo visual para diferenciar o lado do aluno */
+  .grid-side.play .pixel-cell {
+    cursor: pointer;
+  }
+  .grid-side.play .pixel-cell:hover {
+    filter: brightness(0.92);
+    transform: scale(1.05);
+    position: relative;
+    z-index: 3;
+    border-radius: 2px;
+  }
+
+  .palette-wrap { margin: 26px 0 4px; }
+  .palette-label {
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .palette { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .palette-color {
+    width: 44px; height: 44px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 3px solid #E5E8EF;
+    transition: transform 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .palette-color:hover { transform: scale(1.08); }
+  .palette-color.active {
+    border-color: #2D3142;
+    transform: scale(1.15);
+    box-shadow: 0 0 0 3px rgba(45,49,66,0.12);
+  }
+  .palette-color.active::after {
+    content: '✓'; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 900; font-size: 1.1rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .palette-color.white-color.active::after { color: #2D3142; text-shadow: none; }
+
+  .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+  .btn-check, .btn-clear {
+    border: none;
+    border-radius: 50px;
+    padding: 12px 32px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .btn-check {
+    background: linear-gradient(135deg, #E0529C, #8C4DFF);
+    color: white;
+    box-shadow: 0 4px 0 #6A3AC4;
+  }
+  .btn-check:hover { transform: translateY(-2px); }
+  .btn-check:active { transform: translateY(1px); box-shadow: 0 2px 0 #6A3AC4; }
+  .btn-clear {
+    background: #F4F6FA;
+    color: #6B7280;
+    border: 2px solid #E5E8EF;
+    box-shadow: 0 4px 0 #D1D5DB;
+  }
+  .btn-clear:hover { transform: translateY(-2px); }
+  .btn-clear:active { transform: translateY(1px); box-shadow: 0 2px 0 #D1D5DB; }
+
+  .celebration {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(45,49,66,0.55);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .celebration.show { display: flex; }
+  .celebration-box {
+    background: white;
+    border-radius: 26px;
+    padding: 28px 32px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: pop-in 0.45s cubic-bezier(.34,1.56,.64,1);
+    max-width: 390px;
+    width: 90%;
+  }
+  @keyframes pop-in {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  .celeb-emoji { font-size: 3.2rem; margin-bottom: 6px; }
+  .celeb-title { font-size: 1.5rem; font-weight: 900; color: #2D3142; margin-bottom: 14px; }
+
+  .score-area { margin: 10px 0 18px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .score-circle {
+    width: 92px; height: 92px;
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-weight: 900;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+  }
+  .score-number { font-size: 2.2rem; line-height: 1; }
+  .score-label-sm { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+  .score-msg { font-size: 1rem; color: #6B7280; font-weight: 700; }
+  .score-detail { font-size: 0.85rem; color: #9CA3AF; }
+
+  .btn-restart {
+    background: linear-gradient(135deg, #E0529C, #8C4DFF);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 30px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #6A3AC4;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .btn-restart:hover { transform: translateY(-2px); }
+  .btn-restart:active { transform: translateY(1px); box-shadow: 0 2px 0 #6A3AC4; }
+
+  .confetti-piece {
+    position: fixed;
+    width: 10px; height: 10px;
+    pointer-events: none;
+    z-index: 200;
+    animation: confetti-fall 1.8s ease-in forwards;
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translateY(-10px) rotate(0deg);   opacity: 1; }
+    100% { transform: translateY(100vh) rotate(680deg); opacity: 0; }
+  }
+
+  .rodape { text-align: center; font-size: 0.85rem; font-weight: 700; color: #7B8794; margin-top: 10px; border-top: 1px solid #E5E8EF; padding-top: 14px; width: 100%; max-width: 650px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🐧 PIXEL ART - SIMETRIA DO PINGUIM</h1>
+ 
+</div>
+
+<div class="section">
+   
+  <div class="mirror-workspace">
+    <div class="grid-side" id="grid-left"></div>
+    
+    <div class="mirror-divider"></div>
+    
+    <div class="grid-side play" id="grid-right"></div>
+  </div>
+
+  <div class="palette-wrap">
+    <div class="palette-label">Escolha a cor correta:</div>
+    <div class="palette" id="palette-colors"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-clear" onclick="clearPlayfield()">🧹 LIMPAR</button>
+    <button class="btn-check" onclick="evaluateSymmetry()">✅ CONFERIR</button>
+  </div>
+</div>
+
+<div class="celebration" id="celebration">
+  <div class="celebration-box">
+    <div class="celeb-emoji" id="celeb-emoji">🎉</div>
+    <div class="celeb-title" id="celeb-title">RESULTADO</div>
+    <div class="score-area">
+      <div class="score-circle" id="score-circle">
+        <span class="score-number" id="score-number">10</span>
+        <span class="score-label-sm">NOTA</span>
+      </div>
+      <div class="score-msg" id="score-msg">Incrível!</div>
+      <div class="score-detail" id="score-detail">Cálculo proporcional</div>
+    </div>
+    <button class="btn-restart" onclick="restartActivity()">🔄 Tentar Novamente</button>
+  </div>
+</div>
+
+<div class="rodape">Profª Adriana Bett Terebinto | Atividade Pedagógica</div>
+
+<script>
+const ROWS = 12;
+const COLS_HALF = 6; // Cada lado possui 6 colunas
+
+const COLORS = {
+  0: '#ffffff', // Fundo Branco
+  1: '#262626', // Cinza muito escuro / Preto (Corpo do Pinguim)
+  2: '#FF9800'  // Laranja (Bico e Patas)
+};
+
+// Matriz do Lado Esquerdo (Exatamente igual ao arquivo image_65a77b.png)
+const LEFT_PATTERN = [
+  [0,0,0,0,0,0],
+  [0,0,0,0,1,1],
+  [0,0,0,1,0,0],
+  [0,0,1,0,0,0],
+  [0,0,1,0,0,1],
+  [0,0,1,0,2,2],
+  [1,1,1,0,0,2],
+  [0,1,1,1,0,0],
+  [0,0,1,1,0,0],
+  [0,0,0,1,1,0],
+  [0,0,0,2,1,1],
+  [0,0,2,2,2,0]
+];
+
+// O espelhamento exato que o aluno DEVE produzir no lado direito
+const RIGHT_ANSWER = LEFT_PATTERN.map(row => [...row].reverse());
+
+// Contagem total de pixels coloridos obrigatórios para a nota fracionada (Total: 26 pixels)
+const REQUIRED_PIXELS = RIGHT_ANSWER.flat().filter(p => p !== 0).length;
+
+let studentGrid = Array.from({length: ROWS}, () => Array(COLS_HALF).fill(0));
+let selectedColor = 1; // Inicia com o Preto selecionado
+let audioCtx = null;
+
+function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function playTone(freq, type, duration, vol) {
+  try {
+    const ctx = getAudio();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = freq; o.type = type;
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime + duration);
+  } catch(e){}
+}
+
+function initGame() {
+  renderFixedLeft();
+  renderInteractiveRight();
+  renderPalette();
+}
+
+function renderFixedLeft() {
+  const container = document.getElementById('grid-left');
+  container.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS_HALF; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'pixel-cell';
+      cell.style.background = COLORS[LEFT_PATTERN[r][c]];
+      container.appendChild(cell);
+    }
+  }
+}
+
+function renderInteractiveRight() {
+  const container = document.getElementById('grid-right');
+  container.innerHTML = '';
+  let isDragging = false;
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS_HALF; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'pixel-cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.style.background = COLORS[studentGrid[r][c]];
+
+      cell.addEventListener('pointerdown', () => { isDragging = true; handlePaint(cell); });
+      cell.addEventListener('pointerenter', (e) => { if (e.buttons === 1) handlePaint(cell); });
+      container.appendChild(cell);
+    }
+  }
+}
+
+function renderPalette() {
+  const pal = document.getElementById('palette-colors');
+  pal.innerHTML = '';
+  Object.entries(COLORS).forEach(([key, value]) => {
+    const item = document.createElement('div');
+    item.className = `palette-color ${+key === 0 ? 'white-color' : ''}`;
+    item.style.background = value;
+    if (+key === selectedColor) item.classList.add('active');
+
+    item.onclick = () => {
+      document.querySelectorAll('.palette-color').forEach(p => p.classList.remove('active'));
+      item.classList.add('active');
+      selectedColor = +key;
+      playTone(550, 'sine', 0.05, 0.03);
+    };
+    pal.appendChild(item);
+  });
+}
+
+function handlePaint(cell) {
+  const r = +cell.dataset.r;
+  const c = +cell.dataset.c;
+  if (studentGrid[r][c] !== selectedColor) {
+    studentGrid[r][c] = selectedColor;
+    cell.style.background = COLORS[selectedColor];
+    playTone(650, 'sine', 0.06, 0.04);
+  }
+}
+
+function clearPlayfield() {
+  studentGrid = Array.from({length: ROWS}, () => Array(COLS_HALF).fill(0));
+  renderInteractiveRight();
+}
+
+function evaluateSymmetry() {
+  let hits = 0;
+  let misses = 0;
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS_HALF; c++) {
+      const target = RIGHT_ANSWER[r][c];
+      const actual = studentGrid[r][c];
+
+      if (target !== 0) {
+        if (actual === target) {
+          hits++; // Acertou a parte do corpo refletida
+        } else {
+          misses++; // Deixou em branco ou usou cor errada
+        }
+      } else {
+        if (actual !== 0) {
+          misses++; // Pintou onde deveria ser o fundo vazio
+        }
+      }
+    }
+  }
+
+  // Nota fracionada proporcional baseada nos pixels do desenho
+  let finalScore = (hits / REQUIRED_PIXELS) * 10;
+  
+  // Desconto pequeno por pixels extras pintados de forma incorreta no fundo
+  finalScore -= (misses * 0.25);
+
+  if (finalScore < 0) finalScore = 0;
+  if (finalScore > 10) finalScore = 10;
+
+  // Garante nota 10 perfeita se não houver nenhum errinho sequer
+  if (hits === REQUIRED_PIXELS && misses === 0) {
+    finalScore = 10;
+  }
+
+  finalScore = Math.round(finalScore * 10) / 10;
+  displayResults(finalScore, hits);
+}
+
+function displayResults(score, hits) {
+  const modal = document.getElementById('celebration');
+  document.getElementById('score-number').textContent = score.toString().replace('.', ',');
+
+  let emo = "💪";
+  let title = "REVISÃO";
+  let msg = "Vamos dar mais uma olhada e tentar de novo?";
+  let bg = "#F06270";
+  let tc = "white";
+
+  if (score === 10) {
+    emo = "🏆"; title = "PERFEITO!"; msg = "Sensacional! Sua simetria está perfeita!"; bg = "#34C76F";
+    playTone(523, 'sine', 0.1, 0.1);
+    setTimeout(() => playTone(784, 'sine', 0.2, 0.1), 100);
+    triggerConfetti();
+  } else if (score >= 7.5) {
+    emo = "🌟"; title = "MUITO BEM!"; msg = "Excelente! Quase um espelho perfeito!"; bg = "#F5B942"; tc = "#2D3142";
+    playTone(440, 'sine', 0.15, 0.1);
+  } else if (score >= 5.0) {
+    emo = "😊"; title = "BOM TRABALHO"; msg = "Você pegou a ideia! Ajuste os quadradinhos perdidos."; bg = "#5BC8F5";
+    playTone(320, 'triangle', 0.18, 0.1);
+  } else {
+    playTone(200, 'sawtooth', 0.3, 0.1);
+  }
+
+  document.getElementById('celeb-emoji').textContent = emo;
+  document.getElementById('celeb-title').textContent = title;
+  document.getElementById('score-msg').textContent = msg;
+  document.getElementById('score-detail').textContent = `Você completou ${hits} de ${REQUIRED_PIXELS} partes do pinguim.`;
+  
+  const circle = document.getElementById('score-circle');
+  circle.style.background = bg;
+  circle.style.color = tc;
+
+  modal.classList.add('show');
+}
+
+function triggerConfetti() {
+  const colors = ['#E0529C','#8C4DFF','#F5B942','#34C76F','#5BC8F5'];
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = '-12px';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDelay = Math.random() * 0.5 + 's';
+    p.style.animationDuration = (1 + Math.random() * 1.2) + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2400);
+  }
+}
+
+function restartActivity() {
+  document.getElementById('celebration').classList.remove('show');
+  clearPlayfield();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+initGame();
+</script>
+</body>
+</html>
